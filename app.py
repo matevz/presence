@@ -262,36 +262,42 @@ def get_user_stats(username):
 
 @app.route('/beeps/<username>', methods=['DELETE'])
 def delete_beeps(username):
-    """Delete beeps in a specific time range"""
-    date_str = request.args.get('date')
-    start_time = request.args.get('start_time')
-    end_time = request.args.get('end_time')
+    """Delete beeps in a specific time range (operates in UTC)"""
+    start_datetime_str = request.args.get('start_datetime')
+    end_datetime_str = request.args.get('end_datetime')
 
-    if not date_str or not start_time or not end_time:
-        return jsonify({'error': 'date, start_time, and end_time are required'}), 400
+    if not start_datetime_str or not end_datetime_str:
+        return jsonify({'error': 'start_datetime and end_datetime are required (ISO 8601 format)'}), 400
 
     try:
-        # Parse date and times (these are in local timezone)
-        target_date = datetime.strptime(date_str, '%Y-%m-%d')
-        start_datetime_local = datetime.strptime(f"{date_str} {start_time}", '%Y-%m-%d %H:%M')
-        end_datetime_local = datetime.strptime(f"{date_str} {end_time}", '%Y-%m-%d %H:%M')
+        # Parse UTC datetime strings (expected format: 2026-05-07T06:11:00.000Z)
+        start_datetime_utc = datetime.fromisoformat(start_datetime_str.replace('Z', '+00:00'))
+        end_datetime_utc = datetime.fromisoformat(end_datetime_str.replace('Z', '+00:00'))
     except ValueError:
-        return jsonify({'error': 'Invalid date or time format. Use YYYY-MM-DD for date and HH:MM for times'}), 400
+        return jsonify({'error': 'Invalid datetime format. Use ISO 8601 format with timezone'}), 400
 
-    if start_datetime_local >= end_datetime_local:
-        return jsonify({'error': 'start_time must be before end_time'}), 400
-
-    # Convert to UTC for database query
-    start_datetime = local_to_utc(start_datetime_local)
-    end_datetime = local_to_utc(end_datetime_local)
+    if start_datetime_utc >= end_datetime_utc:
+        return jsonify({'error': 'start_datetime must be before end_datetime'}), 400
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Delete beeps in the specified time range
-    cursor.execute(
-        'DELETE FROM presence_beeps WHERE username = ? AND timestamp >= ? AND timestamp < ?',
-        (username, start_datetime.isoformat() + 'Z', end_datetime.isoformat() + 'Z')
+    # Backend operates strictly on UTC
+    # Handle both old (local time, no Z) and new (UTC with Z) timestamp formats in DB
+    # Convert UTC range back to local for old timestamps
+    offset = datetime.now() - datetime.utcnow()
+    start_datetime_local = start_datetime_utc + offset
+    end_datetime_local = end_datetime_utc + offset
+
+    cursor.execute('''
+        DELETE FROM presence_beeps
+        WHERE username = ? AND (
+            (timestamp >= ? AND timestamp < ?) OR
+            (timestamp >= ? AND timestamp < ?)
+        )
+    ''', (username,
+          start_datetime_local.isoformat(), end_datetime_local.isoformat(),
+          start_datetime_utc.isoformat() + 'Z', end_datetime_utc.isoformat() + 'Z')
     )
 
     deleted_count = cursor.rowcount
@@ -302,9 +308,8 @@ def delete_beeps(username):
         'status': 'success',
         'deleted_count': deleted_count,
         'user': username,
-        'date': date_str,
-        'start_time': start_time,
-        'end_time': end_time
+        'start_datetime': start_datetime_str,
+        'end_datetime': end_datetime_str
     }), 200
 
 @app.route('/')

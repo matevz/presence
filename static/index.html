@@ -751,13 +751,26 @@
                         return;
                     }
 
+                    // Convert local times to UTC before sending to backend
+                    const startDateTime = new Date(currentDate + 'T' + startTime);
+                    const endDateTime = new Date(currentDate + 'T' + endTime);
+
+                    // Format as ISO strings and extract date and time components in UTC
+                    const startUTC = startDateTime.toISOString();
+                    const endUTC = endDateTime.toISOString();
+
+                    const startDateUTC = startUTC.split('T')[0];
+                    const startTimeUTC = startUTC.split('T')[1].substring(0, 5);
+                    const endDateUTC = endUTC.split('T')[0];
+                    const endTimeUTC = endUTC.split('T')[1].substring(0, 5);
+
                     const confirmMsg = 'Are you sure you want to delete all beeps between ' + startTime + ' and ' + endTime + '? This cannot be undone.';
                     if (!confirm(confirmMsg)) {
                         return;
                     }
 
                     try {
-                        const url = API_BASE + '/beeps/' + currentUser + '?date=' + currentDate + '&start_time=' + startTime + '&end_time=' + endTime;
+                        const url = API_BASE + '/beeps/' + currentUser + '?start_datetime=' + startUTC + '&end_datetime=' + endUTC;
                         const response = await fetch(url, {
                             method: 'DELETE'
                         });
