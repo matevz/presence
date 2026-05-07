@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presence Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        select, input, button {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        select, input {
+            background: white;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .date-input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        .date-input-wrapper input {
+            flex: 1;
+        }
+
+        .today-btn {
+            padding: 10px 20px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+            white-space: nowrap;
+        }
+
+        .today-btn:hover {
+            background: #643a8a;
+        }
+
+        .stats-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .total-hours {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .total-hours-label {
+            font-size: 14px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .sessions-list, .days-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .session-item, .day-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .session-header, .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .session-time, .day-date {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .session-duration, .day-hours {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .session-details {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        /* Timeline Chart Styles */
+        .timeline-container {
+            margin-top: 30px;
+        }
+
+        .timeline {
+            position: relative;
+            height: 60px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .timeline-session {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+
+        .timeline-session:hover {
+            opacity: 0.8;
+        }
+
+        .timeline-labels {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .timeline-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .timeline-info-item {
+            display: inline-block;
+            margin-right: 20px;
+            color: #666;
+        }
+
+        .timeline-info-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Accordion Styles */
+        .accordion {
+            margin-top: 20px;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            background: #fff3cd;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s;
+            user-select: none;
+        }
+
+        .accordion-header:hover {
+            background: #ffe69c;
+        }
+
+        .accordion-title {
+            margin: 0;
+            color: #856404;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .accordion-icon {
+            color: #856404;
+            font-size: 20px;
+            transition: transform 0.3s;
+        }
+
+        .accordion.active .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: #fff3cd;
+        }
+
+        .accordion.active .accordion-content {
+            max-height: 500px;
+        }
+
+        .accordion-content-inner {
+            padding: 0 20px 20px 20px;
+        }
+
+        /* Delete Beeps Form */
+        .delete-beeps-form {
+            margin: 0;
+        }
+
+        .delete-beeps-form p {
+            margin: 0 0 15px 0;
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .delete-beeps-inputs {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .delete-beeps-inputs .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .delete-beeps-inputs input[type="time"] {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .delete-btn {
+            padding: 8px 20px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .delete-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .delete-success {
+            margin-top: 15px;
+            padding: 10px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            color: #155724;
+        }
+
+        .delete-error {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            color: #721c24;
+        }
+
+        /* Monthly Table Styles */
+        .monthly-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .monthly-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .monthly-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .monthly-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .monthly-table .date-col {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .monthly-table .date-col a {
+            color: #667eea;
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .monthly-table .date-col a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .monthly-table .hours-col {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .monthly-table .beeps-col {
+            color: #888;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .form-group {
+                width: 100%;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .date-input-wrapper {
+                flex-direction: row;
+            }
+
+            .today-btn {
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Presence Tracker</h1>
+            <div class="controls">
+                <div class="form-group">
+                    <label for="userSelect">User</label>
+                    <select id="userSelect">
+                        <option value="">Select user...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="periodSelect">Period</label>
+                    <select id="periodSelect">
+                        <option value="day">Day</option>
+                        <option value="month">Month</option>
+                        <option value="year">Year</option>
+                    </select>
+                </div>
+                <div class="form-group" id="dateInputGroup">
+                    <label for="dateInput">Date</label>
+                    <div class="date-input-wrapper">
+                        <input type="date" id="dateInput">
+                        <button class="today-btn" id="todayBtn">Today</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button id="loadBtn">Load Stats</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="statsContainer" class="stats-container" style="display: none;">
+            <div id="statsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        // Load users on page load
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/users`);
+                const data = await response.json();
+                const select = document.getElementById('userSelect');
+
+                data.users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user;
+                    option.textContent = user;
+                    select.appendChild(option);
+                });
+
+                if (data.users.length > 0) {
+                    select.value = data.users[0];
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        // Set today's date as default
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        document.getElementById('dateInput').value = `${year}-${month}-${day}`;
+
+        // Load stats
+        async function loadStats(pushHistory = false) {
+            const user = document.getElementById('userSelect').value;
+            const period = document.getElementById('periodSelect').value;
+            const date = document.getElementById('dateInput').value;
+
+            if (!user) {
+                alert('Please select a user');
+                return;
+            }
+
+            const statsContainer = document.getElementById('statsContainer');
+            const statsContent = document.getElementById('statsContent');
+
+            statsContainer.style.display = 'block';
+            statsContent.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/stats/${user}?period=${period}&date=${date}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    renderStats(data);
+
+                    // Push state to history for back button support
+                    if (pushHistory) {
+                        const state = { user, period, date };
+                        const url = `?user=${user}&period=${period}&date=${date}`;
+                        history.pushState(state, '', url);
+                    }
+                } else {
+                    statsContent.innerHTML = `<div class="error">${data.error || 'Error loading stats'}</div>`;
+                }
+            } catch (error) {
+                statsContent.innerHTML = `<div class="error">Network error: ${error.message}</div>`;
+            }
+        }
+
+        function formatHours(decimalHours) {
+            const hours = Math.floor(decimalHours);
+            const minutes = Math.round((decimalHours - hours) * 60);
+            if (hours === 0) {
+                return `${minutes}m`;
+            }
+            return `${hours}h ${minutes}m`;
+        }
+
+        function formatTime24h(date) {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+
+        function switchToDailyView(date) {
+            // Switch to day view
+            document.getElementById('periodSelect').value = 'day';
+
+            // Change input type to date
+            const dateInput = document.getElementById('dateInput');
+            dateInput.type = 'date';
+            document.querySelector('label[for="dateInput"]').textContent = 'Date';
+
+            // Set the date
+            dateInput.value = date;
+
+            // Load the stats
+            loadStats(true);
+        }
+
+        function switchToMonthlyView(month) {
+            // Switch to month view
+            document.getElementById('periodSelect').value = 'month';
+
+            // Change input type to month
+            const dateInput = document.getElementById('dateInput');
+            dateInput.type = 'month';
+            document.querySelector('label[for="dateInput"]').textContent = 'Month';
+
+            // Set the month
+            dateInput.value = month;
+
+            // Load the stats
+            loadStats(true);
+        }
+
+        function renderStats(data) {
+            const statsContent = document.getElementById('statsContent');
+
+            if (data.period === 'day') {
+                if (data.sessions.length === 0) {
+                    statsContent.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <h3>No presence data</h3>
+                            <p>No activity recorded for ${data.user} on ${data.date}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `
+                    <div class="stats-header">
+                        <div>
+                            <h2>${data.user}</h2>
+                            <p style="color: #666;">${data.date}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="total-hours">${formatHours(data.total_hours)}</div>
+                            <div class="total-hours-label">Total Time (${data.beep_count} beeps)</div>
+                        </div>
+                    </div>
+                    <div class="timeline-container">
+                        <h3 style="margin-bottom: 15px; color: #333;">Activity Timeline</h3>
+                        <div class="timeline">
+                `;
+
+                // Render sessions on timeline
+                data.sessions.forEach((session, index) => {
+                    const start = new Date(session.start);
+                    const end = new Date(session.end);
+
+                    // Calculate position and width as percentage of 24 hours
+                    const startHour = start.getHours() + start.getMinutes() / 60;
+                    const endHour = end.getHours() + end.getMinutes() / 60;
+                    const leftPercent = (startHour / 24) * 100;
+                    const widthPercent = ((endHour - startHour) / 24) * 100;
+
+                    html += `
+                        <div class="timeline-session"
+                             style="left: ${leftPercent}%; width: ${widthPercent}%;"
+                             title="Session ${index + 1}: ${formatTime24h(start)} - ${formatTime24h(end)}">
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                        <div class="timeline-labels">
+                            <span>00:00</span>
+                            <span>06:00</span>
+                            <span>12:00</span>
+                            <span>18:00</span>
+                            <span>24:00</span>
+                        </div>
+                    </div>
+                    <div class="timeline-info">
+                        <div class="timeline-info-item">
+                            <span class="timeline-info-value">${data.sessions.length}</span> sessions
+                        </div>
+                        <div class="timeline-info-item">
+                            <span class="timeline-info-value">${data.beep_count}</span> beeps (1 beep/min)
+                        </div>
+                `;
+
+                // Add session details
+                if (data.sessions.length > 0) {
+                    const firstSession = new Date(data.sessions[0].start);
+                    const lastSession = new Date(data.sessions[data.sessions.length - 1].end);
+                    html += `
+                        <div class="timeline-info-item">
+                            First activity: <span class="timeline-info-value">${formatTime24h(firstSession)}</span>
+                        </div>
+                        <div class="timeline-info-item">
+                            Last activity: <span class="timeline-info-value">${formatTime24h(lastSession)}</span>
+                        </div>
+                    `;
+                }
+
+                html += `
+                    </div>
+                    <div class="accordion" id="deleteAccordion">
+                        <div class="accordion-header">
+                            <h3 class="accordion-title">⚠️ Remove Accidental Beeps</h3>
+                            <span class="accordion-icon">▼</span>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="accordion-content-inner">
+                                <div class="delete-beeps-form">
+                                    <p>Remove beeps from a specific time range (e.g., when computer was left on)</p>
+                                    <div class="delete-beeps-inputs">
+                                        <div class="form-group">
+                                            <label for="deleteStartTime">Start Time</label>
+                                            <input type="time" id="deleteStartTime">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="deleteEndTime">End Time</label>
+                                            <input type="time" id="deleteEndTime">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>&nbsp;</label>
+                                            <button class="delete-btn" id="deleteBeepsBtn">Delete Beeps</button>
+                                        </div>
+                                    </div>
+                                    <div id="deleteMessage"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                statsContent.innerHTML = html;
+
+                // Add accordion toggle functionality
+                const accordion = document.getElementById('deleteAccordion');
+                const accordionHeader = accordion.querySelector('.accordion-header');
+                accordionHeader.addEventListener('click', () => {
+                    accordion.classList.toggle('active');
+                });
+
+                // Add delete functionality
+                document.getElementById('deleteBeepsBtn').addEventListener('click', async () => {
+                    const startTime = document.getElementById('deleteStartTime').value;
+                    const endTime = document.getElementById('deleteEndTime').value;
+                    const messageDiv = document.getElementById('deleteMessage');
+                    const currentUser = data.user;
+                    const currentDate = data.date;
+
+                    if (!startTime || !endTime) {
+                        messageDiv.innerHTML = '<div class="delete-error">Please enter both start and end times</div>';
+                        return;
+                    }
+
+                    if (startTime >= endTime) {
+                        messageDiv.innerHTML = '<div class="delete-error">Start time must be before end time</div>';
+                        return;
+                    }
+
+                    const confirmMsg = 'Are you sure you want to delete all beeps between ' + startTime + ' and ' + endTime + '? This cannot be undone.';
+                    if (!confirm(confirmMsg)) {
+                        return;
+                    }
+
+                    try {
+                        const url = API_BASE + '/beeps/' + currentUser + '?date=' + currentDate + '&start_time=' + startTime + '&end_time=' + endTime;
+                        const response = await fetch(url, {
+                            method: 'DELETE'
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok) {
+                            messageDiv.innerHTML = '<div class="delete-success">Successfully deleted ' + result.deleted_count + ' beeps. Reloading...</div>';
+                            setTimeout(() => {
+                                loadStats(false);
+                            }, 1500);
+                        } else {
+                            messageDiv.innerHTML = '<div class="delete-error">' + (result.error || 'Error deleting beeps') + '</div>';
+                        }
+                    } catch (error) {
+                        messageDiv.innerHTML = '<div class="delete-error">Network error: ' + error.message + '</div>';
+                    }
+                });
+            } else if (data.period === 'month') {
+                if (data.days.length === 0) {
+                    statsContent.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <h3>No presence data</h3>
+                            <p>No activity recorded for ${data.user} in ${data.month}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `
+                    <div class="stats-header">
+                        <div>
+                            <h2>${data.user}</h2>
+                            <p style="color: #666;">${data.month}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="total-hours">${formatHours(data.total_hours)}</div>
+                            <div class="total-hours-label">Total Hours (${data.total_minutes} beeps)</div>
+                        </div>
+                    </div>
+                    <table class="monthly-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Beeps</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                data.days.forEach(day => {
+                    const dayOfWeek = new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' });
+                    html += `
+                        <tr>
+                            <td class="date-col">
+                                <a href="#" class="day-link" data-date="${day.date}">
+                                    ${day.date}
+                                </a>
+                                <span style="color: #999;">(${dayOfWeek})</span>
+                            </td>
+                            <td class="hours-col">${formatHours(day.hours)}</td>
+                            <td class="beeps-col">${day.beep_count} beeps</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                statsContent.innerHTML = html;
+
+                // Add click handlers to day links
+                document.querySelectorAll('.day-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const date = e.target.getAttribute('data-date');
+                        switchToDailyView(date);
+                    });
+                });
+            } else if (data.period === 'year') {
+                if (data.months.length === 0) {
+                    statsContent.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <h3>No presence data</h3>
+                            <p>No activity recorded for ${data.user} in ${data.year}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = `
+                    <div class="stats-header">
+                        <div>
+                            <h2>${data.user}</h2>
+                            <p style="color: #666;">${data.year}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="total-hours">${formatHours(data.total_hours)}</div>
+                            <div class="total-hours-label">Total Hours (${data.total_minutes} beeps)</div>
+                        </div>
+                    </div>
+                    <table class="monthly-table">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Time</th>
+                                <th>Beeps</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                                   'July', 'August', 'September', 'October', 'November', 'December'];
+
+                data.months.forEach(monthData => {
+                    const monthNum = parseInt(monthData.month.split('-')[1]);
+                    const monthName = monthNames[monthNum - 1];
+                    html += `
+                        <tr>
+                            <td class="date-col">
+                                <a href="#" class="month-link" data-month="${monthData.month}">
+                                    ${monthName} ${data.year}
+                                </a>
+                            </td>
+                            <td class="hours-col">${formatHours(monthData.hours)}</td>
+                            <td class="beeps-col">${monthData.beep_count} beeps</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                statsContent.innerHTML = html;
+
+                // Add click handlers to month links
+                document.querySelectorAll('.month-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const month = e.target.getAttribute('data-month');
+                        switchToMonthlyView(month);
+                    });
+                });
+            }
+        }
+
+        // Function to restore state from history
+        function restoreState(state) {
+            if (!state) return;
+
+            const { user, period, date } = state;
+
+            // Set user
+            if (user) {
+                document.getElementById('userSelect').value = user;
+            }
+
+            // Set period
+            if (period) {
+                document.getElementById('periodSelect').value = period;
+
+                // Update input type based on period
+                const dateInput = document.getElementById('dateInput');
+                const dateLabel = document.querySelector('label[for="dateInput"]');
+                if (period === 'year') {
+                    dateInput.type = 'number';
+                    dateInput.min = '2000';
+                    dateInput.max = '2100';
+                    dateInput.step = '1';
+                    dateLabel.textContent = 'Year';
+                } else if (period === 'month') {
+                    dateInput.type = 'month';
+                    dateLabel.textContent = 'Month';
+                } else {
+                    dateInput.type = 'date';
+                    dateLabel.textContent = 'Date';
+                }
+            }
+
+            // Set date
+            if (date) {
+                document.getElementById('dateInput').value = date;
+            }
+
+            // Load the stats without pushing to history
+            loadStats(false);
+        }
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', (event) => {
+            if (event.state) {
+                restoreState(event.state);
+            }
+        });
+
+        // Event listeners
+        document.getElementById('loadBtn').addEventListener('click', () => loadStats(true));
+
+        document.getElementById('todayBtn').addEventListener('click', () => {
+            const dateInput = document.getElementById('dateInput');
+            const period = document.getElementById('periodSelect').value;
+            const today = new Date();
+
+            if (period === 'year') {
+                dateInput.value = today.getFullYear();
+            } else if (period === 'month') {
+                dateInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            } else {
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${year}-${month}-${day}`;
+            }
+        });
+
+        document.getElementById('periodSelect').addEventListener('change', (e) => {
+            const dateInput = document.getElementById('dateInput');
+            const dateLabel = document.querySelector('label[for="dateInput"]');
+            const today = new Date();
+
+            if (e.target.value === 'year') {
+                dateInput.type = 'number';
+                dateInput.min = '2000';
+                dateInput.max = '2100';
+                dateInput.step = '1';
+                dateLabel.textContent = 'Year';
+                dateInput.value = today.getFullYear();
+            } else if (e.target.value === 'month') {
+                dateInput.type = 'month';
+                dateLabel.textContent = 'Month';
+                dateInput.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            } else {
+                dateInput.type = 'date';
+                dateLabel.textContent = 'Date';
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                dateInput.value = `${year}-${month}-${day}`;
+            }
+        });
+
+        // Initialize
+        loadUsers();
+
+        // Check URL parameters on load and restore state
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('user') && urlParams.has('period') && urlParams.has('date')) {
+            const state = {
+                user: urlParams.get('user'),
+                period: urlParams.get('period'),
+                date: urlParams.get('date')
+            };
+            // Replace the initial state so back button works correctly
+            history.replaceState(state, '', window.location.href);
+        }
+    </script>
+</body>
+</html>

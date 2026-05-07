@@ -1,0 +1,9 @@
+[project]
+name = "prisotnost"
+version = "0.1.0"
+description = "A simple presence tracking system"
+requires-python = ">=3.8"
+dependencies = [
+    "flask>=3.0.0",
+    "flask-cors>=4.0.0",
+]

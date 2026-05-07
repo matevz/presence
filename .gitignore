@@ -1,0 +1,9 @@
+*.db
+*.pyc
+__pycache__/
+venv/
+.venv/
+.env
+*.log
+.claude/
+uv.lock
